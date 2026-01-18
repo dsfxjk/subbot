@@ -6,7 +6,8 @@ from aiogram.filters import Command
 import os
 
 # Настройки
-TOKEN = os.getenv("BOT_TOKEN")  # Берем токен из переменных окружения
+TOKEN = "8517719412:AAGBsAOixmCD-KJQSdQn8bvD3KYPFSBQUX0"
+DATA_FILE = 'subscriptions.json'
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
@@ -140,11 +141,10 @@ async def process_delete(message: types.Message):
     num = int(message.text) - 1
     data = load_data()
     user_id = str(message.from_user.id)
-
     if user_id in data and 0 <= num < len(data[user_id]):
         removed = data[user_id].pop(num)
         save_data(data)
-        await message.answer(f"🗑️ Удалено: {removed['name']}")
+        await message.answer(f"🗑 Удалено: {removed['name']}")
     else:
         await message.answer("❌ Неверный номер")
 
@@ -207,9 +207,12 @@ async def check_reminders():
 
 # Запуск
 async def main():
+    # Запускаем фоновую проверку
+    asyncio.create_task(check_reminders())
+
     # Запускаем бота
     print("Бот запущен")
-    await dp.start_polling(bot, skip_updates=True)
+    await dp.start_polling(bot)
 
 
 if __name__ == "__main__":
