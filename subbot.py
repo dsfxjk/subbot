@@ -6,8 +6,7 @@ from aiogram.filters import Command
 import os
 
 # Настройки
-TOKEN = "8517719412:AAGBsAOixmCD-KJQSdQn8bvD3KYPFSBQUX0"
-DATA_FILE = 'subscriptions.json'
+TOKEN = os.getenv("BOT_TOKEN")  # Берем токен из переменных окружения
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
@@ -208,12 +207,9 @@ async def check_reminders():
 
 # Запуск
 async def main():
-    # Запускаем фоновую проверку
-    asyncio.create_task(check_reminders())
-
     # Запускаем бота
     print("Бот запущен")
-    await dp.start_polling(bot)
+    await dp.start_polling(bot, skip_updates=True)
 
 
 if __name__ == "__main__":
