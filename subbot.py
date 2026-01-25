@@ -6,28 +6,32 @@ from aiogram.filters import Command
 import os
 
 # Настройки
-TOKEN = "8517719412:AAGBsAOixmCD-KJQSdQn8bvD3KYPFSBQUX0"
-DATA_FILE = 'subscriptions.json'
+TOKEN = "8517719412:AAGBsAOixmCD-KJQSdQn8bvD3KYPFSBQUX0" # Токен бота
+DATA_FILE = 'subscriptions.json' # Файл для хранения данных
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
 
 # Функции для работы с данными
 def load_data():
+    """Загружает данные о подписках из JSON файла"""
     if os.path.exists(DATA_FILE):
         with open(DATA_FILE, 'r', encoding='utf-8') as f:
             return json.load(f)
-    return {}
+    return {} # Если файла нет - возвращаем пустой словарь
 
 
 def save_data(data):
+    """Сохраняет данные о подписках в JSON файл"""
     with open(DATA_FILE, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
+# --- КОМАНДЫ БОТА ---
 
 # Команда /start
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
+    # Создаем клавиатуру с основными командами
     keyboard = types.ReplyKeyboardMarkup(keyboard=[
         [types.KeyboardButton(text="/add"), types.KeyboardButton(text="/list")],
         [types.KeyboardButton(text="/del"), types.KeyboardButton(text="/soon")]
@@ -60,6 +64,7 @@ async def cmd_add(message: types.Message):
 @dp.message(lambda message: len(message.text.split()) == 3)
 async def process_add(message: types.Message):
     try:
+        # Разделяем введенные данные
         name, amount, date_str = message.text.split()
 
         # Обработка даты
@@ -80,7 +85,7 @@ async def process_add(message: types.Message):
         user_id = str(message.from_user.id)
 
         if user_id not in data:
-            data[user_id] = []
+            data[user_id] = [] # Создаем список подписок для нового пользователя
 
         data[user_id].append({
             'name': name,
@@ -109,6 +114,7 @@ async def cmd_list(message: types.Message):
         await message.answer("📭 Нет подписок")
         return
 
+    # Формируем список подписок
     text = "📋 Ваши подписки:\n\n"
     for i, sub in enumerate(data[user_id], 1):
         days = (datetime.strptime(sub['date'], "%Y-%m-%d") - datetime.now()).days
@@ -128,6 +134,7 @@ async def cmd_delete(message: types.Message):
         await message.answer("📭 Нет подписок для удаления")
         return
 
+    # Показываем пронумерованный список
     text = "Введи номер для удаления:\n\n"
     for i, sub in enumerate(data[user_id], 1):
         text += f"{i}. {sub['name']}\n"
@@ -164,7 +171,7 @@ async def cmd_soon(message: types.Message):
 
     for sub in data[user_id]:
         days = (datetime.strptime(sub['date'], "%Y-%m-%d") - today).days
-        if 0 <= days <= 14:
+        if 0 <= days <= 14:  # Показываем только те, что в ближайшие 2 недели
             text += f"• {sub['name']} - {sub['amount']} руб.\n"
             text += f"  📅 {sub['date']} (через {days} дней)\n\n"
 
@@ -174,7 +181,7 @@ async def cmd_soon(message: types.Message):
     await message.answer(text)
 
 
-# Авто-напоминания
+# Фоновая задача: проверка и авто-напоминания
 async def check_reminders():
     while True:
         try:
@@ -186,6 +193,7 @@ async def check_reminders():
                     payment_date = datetime.strptime(sub['date'], "%Y-%m-%d")
                     days_left = (payment_date - today).days
 
+                    # Отправляем напоминания за 7, 3, 1 день и в день оплаты
                     if days_left in [7, 3, 1, 0]:
                         if days_left > 0:
                             msg = f"🔔 {sub['name']} - оплата через {days_left} дней"
@@ -194,9 +202,9 @@ async def check_reminders():
 
                         try:
                             await bot.send_message(int(user_id), msg)
-                            await asyncio.sleep(0.5)
+                            await asyncio.sleep(0.5) # Задержка между сообщениями
                         except:
-                            pass
+                            pass # Если пользователь заблокировал бота
 
             await asyncio.sleep(3600)  # Проверка каждый час
 
@@ -207,7 +215,7 @@ async def check_reminders():
 
 # Запуск
 async def main():
-    # Запускаем фоновую проверку
+    # Запускаем фоновую задачу проверки напоминаний
     asyncio.create_task(check_reminders())
 
     # Запускаем бота
@@ -216,4 +224,5 @@ async def main():
 
 
 if __name__ == "__main__":
+    # Запускаем асинхронную main функцию
     asyncio.run(main())
